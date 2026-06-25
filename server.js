@@ -1,8 +1,5 @@
 import http from 'http';
-import path from 'path';
-import {fileURLToPath} from 'url';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = 3001;
 
 // --- In-memory data ---

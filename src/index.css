@@ -42,7 +42,7 @@ body {
     align-items: center;
     font-size: 22px;
     font-weight: 700;
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
     flex-shrink: 0;
 }
 
@@ -50,7 +50,6 @@ body {
 .layout {
     display: flex;
     flex: 1;
-    gap: 0;
     max-width: 1200px;
     width: 100%;
     margin: 0 auto;
@@ -125,7 +124,7 @@ body {
     padding: 2px 8px;
     border-radius: 20px;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
 }
 
 .badge-free {
