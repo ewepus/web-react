@@ -2,10 +2,10 @@ import http from 'http';
 
 const PORT = 3001;
 
-let nextGuestId = 3;
-let nextRoomId = 5;
+let nextWizardId = 3;
+let nextWandId = 5;
 
-const guests = [
+const wizards = [
     {
         id: 1,
         firstName: 'Иван',
@@ -24,12 +24,20 @@ const guests = [
     },
 ];
 
-const rooms = [
-    {id: 1, number: 101, price: 3500, area: 22, guestId: 1},
-    {id: 2, number: 102, price: 5000, area: 35, guestId: 2},
-    {id: 3, number: 201, price: 7500, area: 50, guestId: null},
-    {id: 4, number: 202, price: 4200, area: 28, guestId: null},
+const wands = [
+    {id: 1, number: 101, maxMana: 3500, manaRecoverySpeed: 22, capacity: 100, wizardId: 1},
+    {id: 2, number: 102, maxMana: 5000, manaRecoverySpeed: 35, capacity: 250, wizardId: 2},
+    {id: 3, number: 201, maxMana: 7500, manaRecoverySpeed: 50, capacity: 500, wizardId: null},
+    {id: 4, number: 202, maxMana: 4200, manaRecoverySpeed: 28, capacity: 150, wizardId: null},
 ];
+
+function enrichWand(w) {
+    return {
+        ...w,
+        isAssigned: w.wizardId !== null,
+        wizard: w.wizardId ? wizards.find((wiz) => wiz.id === w.wizardId) || null : null,
+    };
+}
 
 function json(res, status, data) {
     res.writeHead(status, {
@@ -49,113 +57,101 @@ function readBody(req) {
     });
 }
 
-const server = http.createServer(async (req,
-                                        res) => {
+const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, `http://localhost:${PORT}`);
     const p = url.pathname;
 
     if (req.method === 'OPTIONS') return json(res, 204, {});
 
-    // Комнаты
-    if (p === '/api/rooms' && req.method === 'GET') {
-        const enriched = rooms.map((r) => ({
-            ...r,
-            isBooked: r.guestId !== null,
-            guest: r.guestId ? guests.find((g) => g.id === r.guestId) || null : null,
-        }));
-        return json(res, 200, enriched);
+    // Жезлы
+    if (p === '/api/wands' && req.method === 'GET') {
+        return json(res, 200, wands.map(enrichWand));
     }
 
-    if (p === '/api/rooms' && req.method === 'POST') {
+    if (p === '/api/wands' && req.method === 'POST') {
         const body = await readBody(req);
-        const room = {
-            id: nextRoomId++,
+        const wand = {
+            id: nextWandId++,
             number: body.number,
-            price: Number(body.price),
-            area: Number(body.area),
-            guestId: null
+            maxMana: Number(body.maxMana),
+            manaRecoverySpeed: Number(body.manaRecoverySpeed),
+            capacity: Number(body.capacity),
+            wizardId: null
         };
-        rooms.push(room);
-        return json(res, 201, {...room, isBooked: false, guest: null});
+        wands.push(wand);
+        return json(res, 201, enrichWand(wand));
     }
 
-    const roomMatch = p.match(/^\/api\/rooms\/(\d+)$/);
-    if (roomMatch) {
-        const id = Number(roomMatch[1]);
-        const idx = rooms.findIndex((r) => r.id === id);
-        if (idx === -1) return json(res, 404, {error: 'Room not found'});
+    const wandMatch = p.match(/^\/api\/wands\/(\d+)$/);
+    if (wandMatch) {
+        const id = Number(wandMatch[1]);
+        const idx = wands.findIndex((w) => w.id === id);
+        if (idx === -1) return json(res, 404, {error: 'Wand not found'});
 
         if (req.method === 'DELETE') {
-            rooms.splice(idx, 1);
+            wands.splice(idx, 1);
             return json(res, 200, {ok: true});
         }
         if (req.method === 'PUT') {
             const body = await readBody(req);
-            rooms[idx] = {...rooms[idx], ...body, id};
-            const r = rooms[idx];
-            return json(res, 200, {
-                ...r,
-                isBooked: r.guestId !== null,
-                guest: r.guestId ? guests.find((g) => g.id === r.guestId) || null : null
-            });
+            wands[idx] = {...wands[idx], ...body, id};
+            return json(res, 200, enrichWand(wands[idx]));
         }
     }
 
-    // Постояльцы
-    if (p === '/api/guests' && req.method === 'GET') {
-        return json(res, 200, guests);
+    // Волшебники
+    if (p === '/api/wizards' && req.method === 'GET') {
+        return json(res, 200, wizards);
     }
 
-    if (p === '/api/guests' && req.method === 'POST') {
+    if (p === '/api/wizards' && req.method === 'POST') {
         const body = await readBody(req);
-        const guest = {id: nextGuestId++, ...body};
-        guests.push(guest);
-        return json(res, 201, guest);
+        const wizard = {id: nextWizardId++, ...body};
+        wizards.push(wizard);
+        return json(res, 201, wizard);
     }
 
-    const guestMatch = p.match(/^\/api\/guests\/(\d+)$/);
-    if (guestMatch) {
-        const id = Number(guestMatch[1]);
-        const idx = guests.findIndex((g) => g.id === id);
-        if (idx === -1) return json(res, 404, {error: 'Guest not found'});
+    const wizardMatch = p.match(/^\/api\/wizards\/(\d+)$/);
+    if (wizardMatch) {
+        const id = Number(wizardMatch[1]);
+        const idx = wizards.findIndex((w) => w.id === id);
+        if (idx === -1) return json(res, 404, {error: 'Wizard not found'});
 
         if (req.method === 'DELETE') {
-            // unlink from rooms
-            rooms.forEach((r) => {
-                if (r.guestId === id) r.guestId = null;
+            wands.forEach((w) => {
+                if (w.wizardId === id) w.wizardId = null;
             });
-            guests.splice(idx, 1);
+            wizards.splice(idx, 1);
             return json(res, 200, {ok: true});
         }
         if (req.method === 'PUT') {
             const body = await readBody(req);
-            guests[idx] = {...guests[idx], ...body, id};
-            return json(res, 200, guests[idx]);
+            wizards[idx] = {...wizards[idx], ...body, id};
+            return json(res, 200, wizards[idx]);
         }
     }
 
-    // Заселение/Выселение
-    const checkinMatch = p.match(/^\/api\/rooms\/(\d+)\/checkin$/);
-    if (checkinMatch && req.method === 'POST') {
-        const roomId = Number(checkinMatch[1]);
+    // Назначение / снятие волшебника с жезла
+    const assignMatch = p.match(/^\/api\/wands\/(\d+)\/assign$/);
+    if (assignMatch && req.method === 'POST') {
+        const wandId = Number(assignMatch[1]);
         const body = await readBody(req);
-        const room = rooms.find((r) => r.id === roomId);
-        if (!room) return json(res, 404, {error: 'Room not found'});
-        room.guestId = Number(body.guestId);
-        const guest = guests.find((g) => g.id === room.guestId) || null;
-        return json(res, 200, {...room, isBooked: true, guest});
+        const wand = wands.find((w) => w.id === wandId);
+        if (!wand) return json(res, 404, {error: 'Wand not found'});
+        wand.wizardId = Number(body.wizardId);
+        return json(res, 200, enrichWand(wand));
     }
 
-    const checkoutMatch = p.match(/^\/api\/rooms\/(\d+)\/checkout$/);
-    if (checkoutMatch && req.method === 'POST') {
-        const roomId = Number(checkoutMatch[1]);
-        const room = rooms.find((r) => r.id === roomId);
-        if (!room) return json(res, 404, {error: 'Room not found'});
-        room.guestId = null;
-        return json(res, 200, {...room, isBooked: false, guest: null});
+    const unassignMatch = p.match(/^\/api\/wands\/(\d+)\/unassign$/);
+    if (unassignMatch && req.method === 'POST') {
+        const wandId = Number(unassignMatch[1]);
+        const wand = wands.find((w) => w.id === wandId);
+        if (!wand) return json(res, 404, {error: 'Wand not found'});
+        wand.wizardId = null;
+        return json(res, 200, enrichWand(wand));
     }
 
     json(res, 404, {error: 'Not found'});
 });
 
-server.listen(PORT, () => console.log(`Hotel API running on http://localhost:${PORT}`));
+server.listen(PORT, () => console.log(`Wands API running on http://localhost:${PORT}`));

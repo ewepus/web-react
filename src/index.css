@@ -5,19 +5,19 @@
 }
 
 :root {
-    --red: #c0392b;
-    --red-dark: #922b21;
-    --red-hover: #e74c3c;
-    --red-light: #fadbd8;
-    --black: #1a1a1a;
-    --black-soft: #2c2c2c;
-    --gray: #555555;
-    --gray-light: #f5f0f0;
-    --text: #1a1a1a;
-    --text-muted: #666;
-    --border: #e8c0bc;
+    --purple: #7c3aed;
+    --purple-dark: #5b21b6;
+    --purple-hover: #8b5cf6;
+    --purple-light: #ede9fe;
+    --black: #1e1033;
+    --black-soft: #2d1b4e;
+    --gray: #6b5b7a;
+    --gray-light: #f5f0fa;
+    --text: #1e1033;
+    --text-muted: #6b5b7a;
+    --border: #d8cff0;
     --white: #ffffff;
-    --shadow: 0 0.5em 1em 0em rgba(120, 30, 20, 0.15);
+    --shadow: 0 0.5em 1em 0em rgba(91, 33, 182, 0.15);
     --radius: 15px;
     font-family: 'Segoe UI', system-ui, sans-serif;
     font-size: 15px;
@@ -46,14 +46,14 @@ body {
     font-weight: 700;
     letter-spacing: 1px;
     flex-shrink: 0;
-    border-bottom: 3px solid var(--red);
+    border-bottom: 3px solid var(--purple);
 }
 
 .tab-nav {
     background: var(--black-soft);
     display: flex;
     gap: 0;
-    border-bottom: 2px solid var(--red-dark);
+    border-bottom: 2px solid var(--purple-dark);
     padding: 0 24px;
     flex-shrink: 0;
 }
@@ -77,7 +77,7 @@ body {
 
 .tab-btn.active {
     color: #fff;
-    border-bottom-color: var(--red);
+    border-bottom-color: var(--purple);
 }
 
 .layout {
@@ -93,7 +93,7 @@ body {
 
 .section {
     background: var(--white);
-    border: dashed 0.1rem var(--red-dark);
+    border: dashed 0.1rem var(--purple-dark);
     border-radius: var(--radius);
     box-shadow: var(--shadow);
     overflow: hidden;
@@ -105,43 +105,43 @@ body {
     color: var(--white);
     background: var(--black);
     padding: 14px 18px;
-    border-bottom: 2px solid var(--red);
+    border-bottom: 2px solid var(--purple);
 }
 
-.rooms-section {
+.wands-section {
     flex: 1;
     min-width: 0;
 }
 
-.rooms-list {
+.wands-list {
     padding: 12px;
     display: flex;
     flex-direction: column;
     gap: 10px;
 }
 
-.guests-list {
+.wizards-list {
     padding: 12px;
     display: flex;
     flex-direction: column;
     gap: 10px;
 }
 
-.guest-card {
+.wizard-card {
     border: 1px solid var(--border);
     border-radius: 10px;
     padding: 14px 16px;
     background: var(--gray-light);
 }
 
-.guest-card-name {
+.wizard-card-name {
     font-size: 16px;
     font-weight: 700;
-    color: var(--red-dark);
+    color: var(--purple-dark);
     margin-bottom: 6px;
 }
 
-.guest-card-meta {
+.wizard-card-meta {
     font-size: 13px;
     color: var(--text-muted);
     display: flex;
@@ -191,7 +191,7 @@ body {
     border: 1px solid #f9e79f;
 }
 
-.room-card {
+.wand-card {
     border: 1px solid var(--border);
     border-radius: 10px;
     padding: 14px 16px;
@@ -199,19 +199,19 @@ body {
     position: relative;
 }
 
-.room-card.booked {
-    background: #fff5f5;
-    border-color: #f1948a;
+.wand-card.assigned {
+    background: #f5f3ff;
+    border-color: #c4b5fd;
 }
 
-.room-number {
+.wand-number {
     font-size: 16px;
     font-weight: 700;
-    color: var(--red-dark);
+    color: var(--purple-dark);
     margin-bottom: 4px;
 }
 
-.room-meta {
+.wand-meta {
     font-size: 13px;
     color: var(--text-muted);
     display: flex;
@@ -235,26 +235,26 @@ body {
     color: #1e8449;
 }
 
-.badge-booked {
-    background: #fadbd8;
-    color: #c0392b;
+.badge-assigned {
+    background: var(--purple-light);
+    color: var(--purple-dark);
 }
 
-.guest-info {
+.wizard-info {
     margin-top: 8px;
     font-size: 13px;
     color: var(--text-muted);
     padding: 10px 12px;
-    background: rgba(192, 57, 43, 0.06);
+    background: rgba(124, 58, 237, 0.08);
     border-radius: 6px;
-    border-left: 3px solid var(--red);
+    border-left: 3px solid var(--purple);
 }
 
-.guest-info strong {
+.wizard-info strong {
     color: var(--text);
 }
 
-.room-actions {
+.wand-actions {
     display: flex;
     gap: 8px;
     margin-top: 10px;
@@ -301,7 +301,7 @@ body {
 
 .form-group input:focus,
 .form-group select:focus {
-    border-color: var(--red);
+    border-color: var(--purple);
 }
 
 .btn {
@@ -319,12 +319,12 @@ body {
 }
 
 .btn-primary {
-    background: var(--red);
+    background: var(--purple);
     color: white;
 }
 
 .btn-primary:hover {
-    background: var(--red-hover);
+    background: var(--purple-hover);
 }
 
 .btn-danger {
@@ -345,17 +345,17 @@ body {
     opacity: 0.85;
 }
 
-.btn-checkin {
-    background: var(--red-dark);
+.btn-assign {
+    background: var(--purple-dark);
     color: white;
 }
 
-.btn-checkin:hover {
+.btn-assign:hover {
     opacity: 0.85;
 }
 
 .btn-edit {
-    background: #8e44ad;
+    background: var(--purple-dark);
     color: white;
 }
 
@@ -417,7 +417,7 @@ body {
 .modal h3 {
     margin-bottom: 14px;
     font-size: 16px;
-    color: var(--red-dark);
+    color: var(--purple-dark);
 }
 
 .modal-actions {
@@ -434,21 +434,21 @@ body {
         gap: 12px;
     }
 
-    .rooms-section {
+    .wands-section {
         border-radius: 0;
         border-left: none;
         border-right: none;
         width: 100%;
     }
 
-    .rooms-list,
-    .guests-list {
+    .wands-list,
+    .wizards-list {
         padding: 8px 0;
         gap: 0;
     }
 
-    .room-card,
-    .guest-card {
+    .wand-card,
+    .wizard-card {
         border-radius: 0;
         border-left: none;
         border-right: none;
@@ -457,8 +457,8 @@ body {
         padding: 14px 16px;
     }
 
-    .room-card.booked {
-        border-bottom-color: #f1948a;
+    .wand-card.assigned {
+        border-bottom-color: #c4b5fd;
     }
 
     .right-panel {
@@ -485,11 +485,11 @@ body {
         padding: 12px 14px;
     }
 
-    .room-meta {
+    .wand-meta {
         gap: 10px;
     }
 
-    .room-actions {
+    .wand-actions {
         gap: 6px;
     }
 

@@ -12,41 +12,84 @@ function formatDate(d) {
     return `${day}.${m}.${y}`
 }
 
-// Заселение
-function CheckInModal({room, guests, onClose, onCheckin, onCreateGuest}) {
+function validateWandFields(form, setErr) {
+    if (!form.number || form.maxMana === '' || form.manaRecoverySpeed === '' || form.capacity === '') {
+        setErr('Заполните все поля');
+        return false
+    }
+    if (Number(form.number) <= 0) {
+        setErr('Номер жезла должен быть больше 0');
+        return false
+    }
+    if (Number(form.maxMana) <= 0) {
+        setErr('Максимальная мана должна быть больше 0');
+        return false
+    }
+    if (Number(form.manaRecoverySpeed) <= 0) {
+        setErr('Скорость восстановления маны должна быть больше 0');
+        return false
+    }
+    const capacity = Number(form.capacity)
+    if (capacity < 0 || capacity > 999) {
+        setErr('Вместимость должна быть от 0 до 999');
+        return false
+    }
+    return true
+}
+
+const WAND_FIELDS = [
+    ['number', 'Номер жезла', 'number', {min: 1}],
+    ['maxMana', 'Максимальная мана', 'number', {min: 1}],
+    ['manaRecoverySpeed', 'Скорость восстановления маны', 'number', {min: 1}],
+    ['capacity', 'Вместимость', 'number', {min: 0, max: 999}],
+]
+
+function WandFieldInputs({form, setForm}) {
+    return WAND_FIELDS.map(([key, label, type, attrs = {}]) => (
+        <div className="form-group" key={key} style={{marginBottom: 8}}>
+            <label>{label}</label>
+            <input type={type} value={form[key]}
+                   min={attrs.min}
+                   max={attrs.max}
+                   onChange={e => setForm(f => ({...f, [key]: e.target.value}))}/>
+        </div>
+    ))
+}
+
+function AssignWizardModal({wand, wizards, onClose, onAssign, onCreateWizard}) {
     const [mode, setMode] = useState('select')
-    const [selectedGuestId, setSelectedGuestId] = useState('')
+    const [selectedWizardId, setSelectedWizardId] = useState('')
     const [form, setForm] = useState({firstName: '', lastName: '', email: '', birthDate: '', phone: ''})
 
     function handleSubmit() {
         if (mode === 'select') {
-            if (!selectedGuestId) return
-            onCheckin(room.id, Number(selectedGuestId))
+            if (!selectedWizardId) return
+            onAssign(wand.id, Number(selectedWizardId))
         } else {
             if (!form.firstName || !form.lastName) return
-            onCreateGuest(form, room.id)
+            onCreateWizard(form, wand.id)
         }
     }
 
     return (
         <div className="modal-overlay" onClick={onClose}>
             <div className="modal" onClick={e => e.stopPropagation()}>
-                <h3>Заселение — Комната №{room.number}</h3>
+                <h3>Назначение — Жезл №{wand.number}</h3>
                 <div style={{display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap'}}>
                     <button className={`btn ${mode === 'select' ? 'btn-primary' : 'btn-archive'} btn-sm`}
-                            onClick={() => setMode('select')}>Выбрать постояльца
+                            onClick={() => setMode('select')}>Выбрать волшебника
                     </button>
                     <button className={`btn ${mode === 'new' ? 'btn-primary' : 'btn-archive'} btn-sm`}
-                            onClick={() => setMode('new')}>Новый постоялец
+                            onClick={() => setMode('new')}>Новый волшебник
                     </button>
                 </div>
                 {mode === 'select' ? (
                     <div className="form-group">
-                        <label>Постоялец</label>
-                        <select value={selectedGuestId} onChange={e =>
-                            setSelectedGuestId(e.target.value)}>
+                        <label>Волшебник</label>
+                        <select value={selectedWizardId} onChange={e =>
+                            setSelectedWizardId(e.target.value)}>
                             <option value="">— выберите —</option>
-                            {guests.map(g => <option key={g.id} value={g.id}>{g.lastName} {g.firstName}</option>)}
+                            {wizards.map(w => <option key={w.id} value={w.id}>{w.lastName} {w.firstName}</option>)}
                         </select>
                     </div>
                 ) : (
@@ -64,7 +107,7 @@ function CheckInModal({room, guests, onClose, onCheckin, onCreateGuest}) {
                     </div>
                 )}
                 <div className="modal-actions">
-                    <button className="btn btn-primary" onClick={handleSubmit}>Заселить</button>
+                    <button className="btn btn-primary" onClick={handleSubmit}>Арендовать</button>
                     <button className="btn btn-archive" onClick={onClose}>Отмена</button>
                 </div>
             </div>
@@ -72,33 +115,28 @@ function CheckInModal({room, guests, onClose, onCheckin, onCreateGuest}) {
     )
 }
 
-// Редактирование комнаты
-function EditRoomModal({room, onClose, onSave}) {
-    const [form, setForm] = useState({number: room.number, price: room.price, area: room.area})
+function EditWandModal({wand, onClose, onSave}) {
+    const [form, setForm] = useState({
+        number: wand.number,
+        maxMana: wand.maxMana,
+        manaRecoverySpeed: wand.manaRecoverySpeed,
+        capacity: wand.capacity,
+    })
     const [err, setErr] = useState('')
 
     async function handleSave() {
-        if (!form.number || !form.price || !form.area) {
-            setErr('Заполните все поля');
-            return
-        }
-        if (Number(form.number) <= 0) {
-            setErr('Номер комнаты должен быть больше 0');
-            return
-        }
-        if (Number(form.price) <= 0) {
-            setErr('Цена должна быть больше 0');
-            return
-        }
-        if (Number(form.area) <= 0) {
-            setErr('Площадь должна быть больше 0');
-            return
-        }
+        if (!validateWandFields(form, setErr)) return
+        if (!validateWandFields(form, setErr)) return
         setErr('')
-        const res = await fetch(`${API}/rooms/${room.id}`, {
+        const res = await fetch(`${API}/wands/${wand.id}`, {
             method: 'PUT',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({number: Number(form.number), price: Number(form.price), area: Number(form.area)})
+            body: JSON.stringify({
+                number: Number(form.number),
+                maxMana: Number(form.maxMana),
+                manaRecoverySpeed: Number(form.manaRecoverySpeed),
+                capacity: Number(form.capacity),
+            })
         })
         const updated = await res.json()
         onSave(updated)
@@ -107,17 +145,9 @@ function EditRoomModal({room, onClose, onSave}) {
     return (
         <div className="modal-overlay" onClick={onClose}>
             <div className="modal" onClick={e => e.stopPropagation()}>
-                <h3>Редактировать комнату №{room.number}</h3>
-                {[['number', 'Номер комнаты', 'number'], ['price', 'Цена (₽/ночь)', 'number'],
-                    ['area', 'Площадь (м²)', 'number']].map(([key, label, type]) => (
-                    <div className="form-group" key={key} style={{marginBottom: 8}}>
-                        <label>{label}</label>
-                        <input type={type} value={form[key]} min="1"
-                               onChange={e =>
-                                   setForm(f => ({...f, [key]: e.target.value}))}/>
-                    </div>
-                ))}
-                {err && <div style={{color: 'var(--red)', fontSize: 13, marginBottom: 8}}>{err}</div>}
+                <h3>Редактировать жезл №{wand.number}</h3>
+                <WandFieldInputs form={form} setForm={setForm}/>
+                {err && <div style={{color: 'var(--purple-dark)', fontSize: 13, marginBottom: 8}}>{err}</div>}
                 <div className="modal-actions">
                     <button className="btn btn-primary" onClick={handleSave}>Сохранить</button>
                     <button className="btn btn-archive" onClick={onClose}>Отмена</button>
@@ -127,14 +157,13 @@ function EditRoomModal({room, onClose, onSave}) {
     )
 }
 
-// Редактирование постояльца
-function EditGuestModal({guest, onClose, onSave}) {
+function EditWizardModal({wizard, onClose, onSave}) {
     const [form, setForm] = useState({
-        firstName: guest.firstName || '',
-        lastName: guest.lastName || '',
-        email: guest.email || '',
-        birthDate: guest.birthDate || '',
-        phone: guest.phone || ''
+        firstName: wizard.firstName || '',
+        lastName: wizard.lastName || '',
+        email: wizard.email || '',
+        birthDate: wizard.birthDate || '',
+        phone: wizard.phone || ''
     })
     const [err, setErr] = useState('')
 
@@ -144,7 +173,7 @@ function EditGuestModal({guest, onClose, onSave}) {
             return
         }
         setErr('')
-        const res = await fetch(`${API}/guests/${guest.id}`, {
+        const res = await fetch(`${API}/wizards/${wizard.id}`, {
             method: 'PUT',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(form)
@@ -156,7 +185,7 @@ function EditGuestModal({guest, onClose, onSave}) {
     return (
         <div className="modal-overlay" onClick={onClose}>
             <div className="modal" onClick={e => e.stopPropagation()}>
-                <h3>Редактировать постояльца</h3>
+                <h3>Редактировать волшебника</h3>
                 {[['firstName', 'Имя'], ['lastName', 'Фамилия'], ['email', 'Email'],
                     ['birthDate', 'Дата рождения', 'date'], ['phone', 'Телефон']]
                     .map(([key, label, type = 'text']) => (
@@ -167,7 +196,7 @@ function EditGuestModal({guest, onClose, onSave}) {
                                        setForm(f => ({...f, [key]: e.target.value}))}/>
                         </div>
                     ))}
-                {err && <div style={{color: 'var(--red)', fontSize: 13, marginBottom: 8}}>{err}</div>}
+                {err && <div style={{color: 'var(--purple-dark)', fontSize: 13, marginBottom: 8}}>{err}</div>}
                 <div className="modal-actions">
                     <button className="btn btn-primary" onClick={handleSave}>Сохранить</button>
                     <button className="btn btn-archive" onClick={onClose}>Отмена</button>
@@ -177,152 +206,135 @@ function EditGuestModal({guest, onClose, onSave}) {
     )
 }
 
-// Карточка постояльца
-function GuestCard({guest, occupiedRoomNumber, onDelete, onEdit}) {
+function WizardCard({wizard, occupiedWandNumber, onDelete, onEdit}) {
     return (
-        <div className="guest-card">
+        <div className="wizard-card">
             <div style={{display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap'}}>
-                <span className="guest-card-name">{guest.lastName} {guest.firstName}</span>
-                {occupiedRoomNumber
-                    ? <span className="badge badge-booked">Комната №{occupiedRoomNumber}</span>
-                    : <span className="badge badge-free">Без комнаты</span>
+                <span className="wizard-card-name">{wizard.lastName} {wizard.firstName}</span>
+                {occupiedWandNumber
+                    ? <span className="badge badge-assigned">Жезл №{occupiedWandNumber}</span>
+                    : <span className="badge badge-free">Без жезла</span>
                 }
             </div>
-            <div className="guest-card-meta">
-                {guest.email && (
+            <div className="wizard-card-meta">
+                {wizard.email && (
                     <div className="info-pill info-pill-email">
                         <span className="info-pill-label">Почта</span>
-                        <span className="info-pill-value">{guest.email}</span>
+                        <span className="info-pill-value">{wizard.email}</span>
                     </div>
                 )}
-                {guest.phone && (
+                {wizard.phone && (
                     <div className="info-pill info-pill-phone">
                         <span className="info-pill-label">Телефон</span>
-                        <span className="info-pill-value">{guest.phone}</span>
+                        <span className="info-pill-value">{wizard.phone}</span>
                     </div>
                 )}
-                {guest.birthDate && (
+                {wizard.birthDate && (
                     <div className="info-pill info-pill-date">
                         <span className="info-pill-label">Дата рождения</span>
-                        <span className="info-pill-value">{formatDate(guest.birthDate)}</span>
+                        <span className="info-pill-value">{formatDate(wizard.birthDate)}</span>
                     </div>
                 )}
             </div>
-            <div className="room-actions">
-                <button className="btn btn-edit btn-sm" onClick={() => onEdit(guest)}>Редактировать</button>
-                <button className="btn btn-danger btn-sm" onClick={() => onDelete(guest.id)}>Удалить</button>
+            <div className="wand-actions">
+                <button className="btn btn-edit btn-sm" onClick={() => onEdit(wizard)}>Редактировать</button>
+                <button className="btn btn-danger btn-sm" onClick={() => onDelete(wizard.id)}>Удалить</button>
             </div>
         </div>
     )
 }
 
-// Карточка комнаты
-function RoomCard({room, onDelete, onArchive, onCheckin, onCheckout, onEdit}) {
+function WandCard({wand, onDelete, onArchive, onAssign, onUnassign, onEdit}) {
     return (
-        <div className={`room-card ${room.isBooked ? 'booked' : ''}`}>
+        <div className={`wand-card ${wand.isAssigned ? 'assigned' : ''}`}>
             <div style={{display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, flexWrap: 'wrap'}}>
-                <span className="room-number">Комната №{room.number}</span>
-                <span className={`badge ${room.isBooked ? 'badge-booked' : 'badge-free'}`}>
-                    {room.isBooked ? 'Занята' : 'Свободна'}
+                <span className="wand-number">Жезл №{wand.number}</span>
+                <span className={`badge ${wand.isAssigned ? 'badge-assigned' : 'badge-free'}`}>
+                    {wand.isAssigned ? 'Занят' : 'Свободен'}
                 </span>
             </div>
-            <div className="room-meta">
-                <span>Стоимость: {room.price.toLocaleString('ru')} ₽/ночь</span>
-                <span>Площадь: {room.area} м²</span>
+            <div className="wand-meta">
+                <span>Макс. мана: {wand.maxMana.toLocaleString('ru')}</span>
+                <span>Скор. восстановления: {wand.manaRecoverySpeed}</span>
+                <span>Вместимость: {wand.capacity}</span>
             </div>
-            {room.guest && (
-                <div className="guest-info">
-                    <strong>{room.guest.lastName} {room.guest.firstName}</strong>
+            {wand.wizard && (
+                <div className="wizard-info">
+                    <strong>{wand.wizard.lastName} {wand.wizard.firstName}</strong>
                     <div style={{marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4}}>
-                        {room.guest.email && (
+                        {wand.wizard.email && (
                             <div className="info-pill info-pill-email">
                                 <span className="info-pill-label">Почта</span>
-                                <span className="info-pill-value">{room.guest.email}</span>
+                                <span className="info-pill-value">{wand.wizard.email}</span>
                             </div>
                         )}
-                        {room.guest.phone && (
+                        {wand.wizard.phone && (
                             <div className="info-pill info-pill-phone">
                                 <span className="info-pill-label">Телефон</span>
-                                <span className="info-pill-value">{formatPhone(room.guest.phone)}</span>
+                                <span className="info-pill-value">{formatPhone(wand.wizard.phone)}</span>
                             </div>
                         )}
-                        {room.guest.birthDate && (
+                        {wand.wizard.birthDate && (
                             <div className="info-pill info-pill-date">
                                 <span className="info-pill-label">Дата рождения</span>
-                                <span className="info-pill-value">{formatDate(room.guest.birthDate)}</span>
+                                <span className="info-pill-value">{formatDate(wand.wizard.birthDate)}</span>
                             </div>
                         )}
                     </div>
                 </div>
             )}
-            <div className="room-actions">
-                {room.isBooked
-                    ? <button className="btn btn-archive btn-sm" onClick={() => onCheckout(room.id)}>Выселить</button>
-                    : <button className="btn btn-checkin btn-sm" onClick={() => onCheckin(room)}>Заселить</button>
+            <div className="wand-actions">
+                {wand.isAssigned
+                    ? <button className="btn btn-archive btn-sm" onClick={() => onUnassign(wand.id)}>Снять</button>
+                    : <button className="btn btn-assign btn-sm" onClick={() => onAssign(wand)}>Арендовать</button>
                 }
-                <button className="btn btn-edit btn-sm" onClick={() => onEdit(room)}>Редактировать</button>
-                <button className="btn btn-archive btn-sm" onClick={() => onArchive(room)}>Архив</button>
-                <button className="btn btn-danger btn-sm" onClick={() => onDelete(room.id)}>Удалить</button>
+                <button className="btn btn-edit btn-sm" onClick={() => onEdit(wand)}>Редактировать</button>
+                <button className="btn btn-archive btn-sm" onClick={() => onArchive(wand)}>Архив</button>
+                <button className="btn btn-danger btn-sm" onClick={() => onDelete(wand.id)}>Удалить</button>
             </div>
         </div>
     )
 }
 
-// Форма создания комнаты
-function CreateRoomForm({onCreated}) {
-    const [form, setForm] = useState({number: '', price: '', area: ''})
+function CreateWandForm({onCreated}) {
+    const [form, setForm] = useState({number: '', maxMana: '', manaRecoverySpeed: '', capacity: ''})
     const [err, setErr] = useState('')
 
     async function handle() {
-        if (!form.number || !form.price || !form.area) {
-            setErr('Заполните все поля');
-            return
-        }
-        if (Number(form.number) <= 0) {
-            setErr('Номер комнаты должен быть больше 0');
-            return
-        }
-        if (Number(form.price) <= 0) {
-            setErr('Цена должна быть больше 0');
-            return
-        }
-        if (Number(form.area) <= 0) {
-            setErr('Площадь должна быть больше 0');
-            return
-        }
+        if (!validateWandFields(form, setErr)) return
         setErr('')
-        const res = await fetch(`${API}/rooms`, {
+        const res = await fetch(`${API}/wands`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(form)
         })
-        const room = await res.json()
-        onCreated(room)
-        setForm({number: '', price: '', area: ''})
+        const wand = await res.json()
+        onCreated(wand)
+        setForm({number: '', maxMana: '', manaRecoverySpeed: '', capacity: ''})
     }
 
     return (
         <div className="section">
-            <div className="section-title">Добавить комнату</div>
+            <div className="section-title">Добавить жезл</div>
             <div className="form-body">
-                {[['number', 'Номер комнаты', 'number'], ['price', 'Цена (₽/ночь)', 'number'],
-                    ['area', 'Площадь (м²)', 'number']].map(([key, label, type]) => (
+                {WAND_FIELDS.map(([key, label, type, attrs = {}]) => (
                     <div className="form-group" key={key}>
                         <label>{label}</label>
-                        <input type={type} value={form[key]} min="1"
+                        <input type={type} value={form[key]}
+                               min={attrs.min}
+                               max={attrs.max}
                                onChange={e =>
                                    setForm(f => ({...f, [key]: e.target.value}))} placeholder={label}/>
                     </div>
                 ))}
-                {err && <div style={{color: 'var(--red)', fontSize: 13}}>{err}</div>}
+                {err && <div style={{color: 'var(--purple-dark)', fontSize: 13}}>{err}</div>}
                 <button className="btn btn-primary" onClick={handle}>Создать</button>
             </div>
         </div>
     )
 }
 
-// Форма создания постояльца
-function CreateGuestForm({onCreated}) {
+function CreateWizardForm({onCreated}) {
     const [form, setForm] = useState({firstName: '', lastName: '', email: '', birthDate: '', phone: ''})
     const [err, setErr] = useState('')
 
@@ -332,19 +344,19 @@ function CreateGuestForm({onCreated}) {
             return
         }
         setErr('')
-        const res = await fetch(`${API}/guests`, {
+        const res = await fetch(`${API}/wizards`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(form)
         })
-        const guest = await res.json()
-        onCreated(guest)
+        const wizard = await res.json()
+        onCreated(wizard)
         setForm({firstName: '', lastName: '', email: '', birthDate: '', phone: ''})
     }
 
     return (
         <div className="section">
-            <div className="section-title">Добавить постояльца</div>
+            <div className="section-title">Добавить волшебника</div>
             <div className="form-body">
                 {[['firstName', 'Имя'], ['lastName', 'Фамилия'], ['email', 'Email'],
                     ['birthDate', 'Дата рождения', 'date'], ['phone', 'Телефон']]
@@ -356,7 +368,7 @@ function CreateGuestForm({onCreated}) {
                                        setForm(f => ({...f, [key]: e.target.value}))} placeholder={label}/>
                         </div>
                     ))}
-                {err && <div style={{color: 'var(--red)', fontSize: 13}}>{err}</div>}
+                {err && <div style={{color: 'var(--purple-dark)', fontSize: 13}}>{err}</div>}
                 <button className="btn btn-primary" onClick={handle}>Создать</button>
             </div>
         </div>
@@ -364,149 +376,147 @@ function CreateGuestForm({onCreated}) {
 }
 
 export default function App() {
-    const [tab, setTab] = useState('rooms') // 'rooms' | 'guests'
-    const [rooms, setRooms] = useState([])
-    const [guests, setGuests] = useState([])
+    const [tab, setTab] = useState('wands')
+    const [wands, setWands] = useState([])
+    const [wizards, setWizards] = useState([])
     const [archive, setArchive] = useState([])
-    const [checkinRoom, setCheckinRoom] = useState(null)
-    const [editRoom, setEditRoom] = useState(null)
-    const [editGuest, setEditGuest] = useState(null)
+    const [assignWand, setAssignWand] = useState(null)
+    const [editWand, setEditWand] = useState(null)
+    const [editWizard, setEditWizard] = useState(null)
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
         Promise.all([
-            fetch(`${API}/rooms`).then(r => r.json()),
-            fetch(`${API}/guests`).then(r => r.json()),
-        ]).then(([r, g]) => {
-            setRooms(r);
-            setGuests(g);
+            fetch(`${API}/wands`).then(r => r.json()),
+            fetch(`${API}/wizards`).then(r => r.json()),
+        ]).then(([w, wiz]) => {
+            setWands(w);
+            setWizards(wiz);
             setLoading(false)
         })
     }, [])
 
-    async function handleDeleteRoom(id) {
-        await fetch(`${API}/rooms/${id}`, {method: 'DELETE'})
-        setRooms(rs => rs.filter(r => r.id !== id))
+    async function handleDeleteWand(id) {
+        await fetch(`${API}/wands/${id}`, {method: 'DELETE'})
+        setWands(ws => ws.filter(w => w.id !== id))
     }
 
-    async function handleDeleteGuest(id) {
-        await fetch(`${API}/guests/${id}`, {method: 'DELETE'})
-        setGuests(gs => gs.filter(g => g.id !== id))
-        setRooms(rs => rs.map(r => r.guest?.id === id ? {...r, isBooked: false, guest: null, guestId: null} : r))
+    async function handleDeleteWizard(id) {
+        await fetch(`${API}/wizards/${id}`, {method: 'DELETE'})
+        setWizards(wiz => wiz.filter(w => w.id !== id))
+        setWands(ws => ws.map(w => w.wizard?.id === id ? {...w, isAssigned: false, wizard: null, wizardId: null} : w))
     }
 
-    function handleArchive(room) {
-        setArchive(a => [...a, room])
-        setRooms(rs => rs.filter(r => r.id !== room.id))
+    function handleArchive(wand) {
+        setArchive(a => [...a, wand])
+        setWands(ws => ws.filter(w => w.id !== wand.id))
     }
 
-    async function handleCheckin(roomId, guestId) {
-        const res = await fetch(`${API}/rooms/${roomId}/checkin`, {
+    async function handleAssign(wandId, wizardId) {
+        const res = await fetch(`${API}/wands/${wandId}/assign`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({guestId})
+            body: JSON.stringify({wizardId})
         })
         const updated = await res.json()
-        setRooms(rs => rs.map(r => r.id === roomId ? updated : r))
-        setCheckinRoom(null)
+        setWands(ws => ws.map(w => w.id === wandId ? updated : w))
+        setAssignWand(null)
     }
 
-    async function handleCreateGuestAndCheckin(guestData, roomId) {
-        const res = await fetch(`${API}/guests`, {
+    async function handleCreateWizardAndAssign(wizardData, wandId) {
+        const res = await fetch(`${API}/wizards`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(guestData)
+            body: JSON.stringify(wizardData)
         })
-        const guest = await res.json()
-        setGuests(gs => [...gs, guest])
-        await handleCheckin(roomId, guest.id)
+        const wizard = await res.json()
+        setWizards(wiz => [...wiz, wizard])
+        await handleAssign(wandId, wizard.id)
     }
 
-    async function handleCheckout(roomId) {
-        const res = await fetch(`${API}/rooms/${roomId}/checkout`, {method: 'POST'})
+    async function handleUnassign(wandId) {
+        const res = await fetch(`${API}/wands/${wandId}/unassign`, {method: 'POST'})
         const updated = await res.json()
-        setRooms(rs => rs.map(r => r.id === roomId ? updated : r))
+        setWands(ws => ws.map(w => w.id === wandId ? updated : w))
     }
 
-    function handleRoomSaved(updated) {
-        setRooms(rs => rs.map(r => r.id === updated.id ? {...r, ...updated} : r))
-        setEditRoom(null)
+    function handleWandSaved(updated) {
+        setWands(ws => ws.map(w => w.id === updated.id ? {...w, ...updated} : w))
+        setEditWand(null)
     }
 
-    function handleGuestSaved(updated) {
-        setGuests(gs => gs.map(g => g.id === updated.id ? updated : g))
-        setEditGuest(null)
+    function handleWizardSaved(updated) {
+        setWizards(wiz => wiz.map(w => w.id === updated.id ? updated : w))
+        setEditWizard(null)
     }
 
     const occupiedMap = {}
-    rooms.forEach(r => {
-        if (r.guest) occupiedMap[r.guest.id] = r.number
+    wands.forEach(w => {
+        if (w.wizard) occupiedMap[w.wizard.id] = w.number
     })
 
     return (
         <>
-            <header className="header">Управление отелем</header>
+            <header className="header">Аренда волшебных жезлов</header>
 
             <nav className="tab-nav">
-                <button className={`tab-btn ${tab === 'rooms' ? 'active' : ''}`} onClick={() => setTab('rooms')}>🛏
-                    Комнаты
+                <button className={`tab-btn ${tab === 'wands' ? 'active' : ''}`} onClick={() => setTab('wands')}>🪄
+                    Жезлы
                 </button>
-                <button className={`tab-btn ${tab === 'guests' ? 'active' : ''}`} onClick={() => setTab('guests')}>👤
-                    Постояльцы
+                <button className={`tab-btn ${tab === 'wizards' ? 'active' : ''}`} onClick={() => setTab('wizards')}>🧙
+                    Волшебники
                 </button>
             </nav>
 
             <div className="layout">
-                {/* LEFT: main list */}
-                {tab === 'rooms' ? (
-                    <div className="section rooms-section">
-                        <div className="section-title">Комнаты</div>
-                        <div className="rooms-list">
+                {tab === 'wands' ? (
+                    <div className="section wands-section">
+                        <div className="section-title">Жезлы</div>
+                        <div className="wands-list">
                             {loading && <div className="empty-state">Загрузка...</div>}
-                            {!loading && rooms.length === 0 &&
-                                <div className="empty-state">Нет комнат. Добавьте первую.</div>}
-                            {rooms.map(room => (
-                                <RoomCard key={room.id} room={room}
-                                          onDelete={handleDeleteRoom}
+                            {!loading && wands.length === 0 &&
+                                <div className="empty-state">Нет жезлов. Добавьте первый.</div>}
+                            {wands.map(wand => (
+                                <WandCard key={wand.id} wand={wand}
+                                          onDelete={handleDeleteWand}
                                           onArchive={handleArchive}
-                                          onCheckin={setCheckinRoom}
-                                          onCheckout={handleCheckout}
-                                          onEdit={setEditRoom}
+                                          onAssign={setAssignWand}
+                                          onUnassign={handleUnassign}
+                                          onEdit={setEditWand}
                                 />
                             ))}
                         </div>
                     </div>
                 ) : (
-                    <div className="section rooms-section">
-                        <div className="section-title">Постояльцы</div>
-                        <div className="guests-list">
+                    <div className="section wands-section">
+                        <div className="section-title">Волшебники</div>
+                        <div className="wizards-list">
                             {loading && <div className="empty-state">Загрузка...</div>}
-                            {!loading && guests.length === 0 && <div className="empty-state">Нет постояльцев.</div>}
-                            {guests.map(g => (
-                                <GuestCard key={g.id} guest={g}
-                                           occupiedRoomNumber={occupiedMap[g.id]}
-                                           onDelete={handleDeleteGuest}
-                                           onEdit={setEditGuest}
+                            {!loading && wizards.length === 0 && <div className="empty-state">Нет волшебников.</div>}
+                            {wizards.map(w => (
+                                <WizardCard key={w.id} wizard={w}
+                                           occupiedWandNumber={occupiedMap[w.id]}
+                                           onDelete={handleDeleteWizard}
+                                           onEdit={setEditWizard}
                                 />
                             ))}
                         </div>
                     </div>
                 )}
 
-                {/* RIGHT PANEL */}
                 <div className="right-panel">
-                    {tab === 'rooms' ? (
+                    {tab === 'wands' ? (
                         <>
-                            <CreateRoomForm onCreated={r => setRooms(rs => [...rs, r])}/>
+                            <CreateWandForm onCreated={w => setWands(ws => [...ws, w])}/>
                             <div className="section">
                                 <div className="section-title">Архив</div>
                                 <div className="archive-list">
                                     {archive.length === 0
                                         ? <div className="empty-state" style={{padding: '10px 0'}}>Архив пуст</div>
-                                        : <ul>{archive.map((r, i) => (
-                                            <li key={i}>Комната
-                                                №{r.number} — {r.price.toLocaleString('ru')} ₽/ночь, {r.area} м²
-                                                {r.guest && ` (${r.guest.lastName} ${r.guest.firstName})`}
+                                        : <ul>{archive.map((w, i) => (
+                                            <li key={i}>Жезл
+                                                №{w.number} — мана {w.maxMana.toLocaleString('ru')}, скор. {w.manaRecoverySpeed}, вместимость {w.capacity}
+                                                {w.wizard && ` (${w.wizard.lastName} ${w.wizard.firstName})`}
                                             </li>
                                         ))}</ul>
                                     }
@@ -514,20 +524,20 @@ export default function App() {
                             </div>
                         </>
                     ) : (
-                        <CreateGuestForm onCreated={g => setGuests(gs => [...gs, g])}/>
+                        <CreateWizardForm onCreated={w => setWizards(wiz => [...wiz, w])}/>
                     )}
                 </div>
             </div>
 
-            {checkinRoom && (
-                <CheckInModal room={checkinRoom} guests={guests} onClose={() => setCheckinRoom(null)}
-                              onCheckin={handleCheckin} onCreateGuest={handleCreateGuestAndCheckin}/>
+            {assignWand && (
+                <AssignWizardModal wand={assignWand} wizards={wizards} onClose={() => setAssignWand(null)}
+                              onAssign={handleAssign} onCreateWizard={handleCreateWizardAndAssign}/>
             )}
-            {editRoom && (
-                <EditRoomModal room={editRoom} onClose={() => setEditRoom(null)} onSave={handleRoomSaved}/>
+            {editWand && (
+                <EditWandModal wand={editWand} onClose={() => setEditWand(null)} onSave={handleWandSaved}/>
             )}
-            {editGuest && (
-                <EditGuestModal guest={editGuest} onClose={() => setEditGuest(null)} onSave={handleGuestSaved}/>
+            {editWizard && (
+                <EditWizardModal wizard={editWizard} onClose={() => setEditWizard(null)} onSave={handleWizardSaved}/>
             )}
         </>
     )
