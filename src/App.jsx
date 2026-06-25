@@ -82,6 +82,18 @@ function EditRoomModal({room, onClose, onSave}) {
             setErr('Заполните все поля');
             return
         }
+        if (Number(form.number) <= 0) {
+            setErr('Номер комнаты должен быть больше 0');
+            return
+        }
+        if (Number(form.price) <= 0) {
+            setErr('Цена должна быть больше 0');
+            return
+        }
+        if (Number(form.area) <= 0) {
+            setErr('Площадь должна быть больше 0');
+            return
+        }
         setErr('')
         const res = await fetch(`${API}/rooms/${room.id}`, {
             method: 'PUT',
@@ -100,7 +112,7 @@ function EditRoomModal({room, onClose, onSave}) {
                     ['area', 'Площадь (м²)', 'number']].map(([key, label, type]) => (
                     <div className="form-group" key={key} style={{marginBottom: 8}}>
                         <label>{label}</label>
-                        <input type={type} value={form[key]}
+                        <input type={type} value={form[key]} min="1"
                                onChange={e =>
                                    setForm(f => ({...f, [key]: e.target.value}))}/>
                     </div>
@@ -169,7 +181,7 @@ function EditGuestModal({guest, onClose, onSave}) {
 function GuestCard({guest, occupiedRoomNumber, onDelete, onEdit}) {
     return (
         <div className="guest-card">
-            <div style={{display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap'}}>
+            <div style={{display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap'}}>
                 <span className="guest-card-name">{guest.lastName} {guest.firstName}</span>
                 {occupiedRoomNumber
                     ? <span className="badge badge-booked">Комната №{occupiedRoomNumber}</span>
@@ -177,9 +189,24 @@ function GuestCard({guest, occupiedRoomNumber, onDelete, onEdit}) {
                 }
             </div>
             <div className="guest-card-meta">
-                {guest.email && <span>Почта: {guest.email}</span>}
-                {guest.phone && <span>Номер телефона: {guest.phone}</span>}
-                {guest.birthDate && <span>Дата рождения: {formatDate(guest.birthDate)}</span>}
+                {guest.email && (
+                    <div className="info-pill info-pill-email">
+                        <span className="info-pill-label">Почта</span>
+                        <span className="info-pill-value">{guest.email}</span>
+                    </div>
+                )}
+                {guest.phone && (
+                    <div className="info-pill info-pill-phone">
+                        <span className="info-pill-label">Телефон</span>
+                        <span className="info-pill-value">{guest.phone}</span>
+                    </div>
+                )}
+                {guest.birthDate && (
+                    <div className="info-pill info-pill-date">
+                        <span className="info-pill-label">Дата рождения</span>
+                        <span className="info-pill-value">{formatDate(guest.birthDate)}</span>
+                    </div>
+                )}
             </div>
             <div className="room-actions">
                 <button className="btn btn-edit btn-sm" onClick={() => onEdit(guest)}>Редактировать</button>
@@ -193,7 +220,7 @@ function GuestCard({guest, occupiedRoomNumber, onDelete, onEdit}) {
 function RoomCard({room, onDelete, onArchive, onCheckin, onCheckout, onEdit}) {
     return (
         <div className={`room-card ${room.isBooked ? 'booked' : ''}`}>
-            <div style={{display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap'}}>
+            <div style={{display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, flexWrap: 'wrap'}}>
                 <span className="room-number">Комната №{room.number}</span>
                 <span className={`badge ${room.isBooked ? 'badge-booked' : 'badge-free'}`}>
                     {room.isBooked ? 'Занята' : 'Свободна'}
@@ -205,10 +232,27 @@ function RoomCard({room, onDelete, onArchive, onCheckin, onCheckout, onEdit}) {
             </div>
             {room.guest && (
                 <div className="guest-info">
-                    <strong>{room.guest.lastName} {room.guest.firstName}</strong><br/>
-                    Почта: {room.guest.email}<br/>
-                    Номер телефона: {formatPhone(room.guest.phone)}<br/>
-                    Дата рождения: {formatDate(room.guest.birthDate)}
+                    <strong>{room.guest.lastName} {room.guest.firstName}</strong>
+                    <div style={{marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4}}>
+                        {room.guest.email && (
+                            <div className="info-pill info-pill-email">
+                                <span className="info-pill-label">Почта</span>
+                                <span className="info-pill-value">{room.guest.email}</span>
+                            </div>
+                        )}
+                        {room.guest.phone && (
+                            <div className="info-pill info-pill-phone">
+                                <span className="info-pill-label">Телефон</span>
+                                <span className="info-pill-value">{formatPhone(room.guest.phone)}</span>
+                            </div>
+                        )}
+                        {room.guest.birthDate && (
+                            <div className="info-pill info-pill-date">
+                                <span className="info-pill-label">Дата рождения</span>
+                                <span className="info-pill-value">{formatDate(room.guest.birthDate)}</span>
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
             <div className="room-actions">
@@ -234,6 +278,18 @@ function CreateRoomForm({onCreated}) {
             setErr('Заполните все поля');
             return
         }
+        if (Number(form.number) <= 0) {
+            setErr('Номер комнаты должен быть больше 0');
+            return
+        }
+        if (Number(form.price) <= 0) {
+            setErr('Цена должна быть больше 0');
+            return
+        }
+        if (Number(form.area) <= 0) {
+            setErr('Площадь должна быть больше 0');
+            return
+        }
         setErr('')
         const res = await fetch(`${API}/rooms`, {
             method: 'POST',
@@ -253,7 +309,7 @@ function CreateRoomForm({onCreated}) {
                     ['area', 'Площадь (м²)', 'number']].map(([key, label, type]) => (
                     <div className="form-group" key={key}>
                         <label>{label}</label>
-                        <input type={type} value={form[key]}
+                        <input type={type} value={form[key]} min="1"
                                onChange={e =>
                                    setForm(f => ({...f, [key]: e.target.value}))} placeholder={label}/>
                     </div>
