@@ -2,7 +2,6 @@ import http from 'http';
 
 const PORT = 3001;
 
-// --- In-memory data ---
 let nextGuestId = 3;
 let nextRoomId = 5;
 
@@ -50,13 +49,14 @@ function readBody(req) {
     });
 }
 
-const server = http.createServer(async (req, res) => {
+const server = http.createServer(async (req,
+                                        res) => {
     const url = new URL(req.url, `http://localhost:${PORT}`);
     const p = url.pathname;
 
     if (req.method === 'OPTIONS') return json(res, 204, {});
 
-    // --- ROOMS ---
+    // Комнаты
     if (p === '/api/rooms' && req.method === 'GET') {
         const enriched = rooms.map((r) => ({
             ...r,
@@ -101,7 +101,7 @@ const server = http.createServer(async (req, res) => {
         }
     }
 
-    // --- GUESTS ---
+    // Постояльцы
     if (p === '/api/guests' && req.method === 'GET') {
         return json(res, 200, guests);
     }
@@ -134,7 +134,7 @@ const server = http.createServer(async (req, res) => {
         }
     }
 
-    // Checkin / Checkout
+    // Заселение/Выселение
     const checkinMatch = p.match(/^\/api\/rooms\/(\d+)\/checkin$/);
     if (checkinMatch && req.method === 'POST') {
         const roomId = Number(checkinMatch[1]);
